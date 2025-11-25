@@ -283,7 +283,7 @@ export default function SettingsPage() {
         .toString().padStart(2,"0")}`
 
       if (format === "csv") {
-        const headers = ["Date", "Type", "Category", "Income", "Expense", "Balance", "Description"]
+        const headers = ["Date", "Type", "Category", "Description", "Income", "Expense", "Balance"]
         let runningBalance = 0
         let totalIncome = 0
         let totalExpense = 0
@@ -307,14 +307,14 @@ export default function SettingsPage() {
               customDateFormat(t.date),
               t.type,
               getCategoryName(t.category),
+              `"${t.description.replace(/"/g, '""')}"`,
               income,
               expense,
               runningBalance,
-              `"${t.description.replace(/"/g, '""')}"`,
             ].join(",")
           }),
 
-          ["", "", "Total", totalIncome, totalExpense, runningBalance, ""],
+          ["", "", "", "Total", totalIncome, totalExpense, runningBalance],
         ].join("\n")
 
         content = csvContent

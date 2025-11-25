@@ -31,9 +31,9 @@ const COLORS = {
   textMuted: [148, 163, 184], // slate-400
   
   // Background colors
-  bgLight: [255, 255, 255], // white
+  bgLight: [241, 245, 249], // slate-100
   bgCard: [255, 255, 255], // white
-  bgDark: [241, 245, 249], // slate-100
+  bgDark: [225, 230, 235], // slate-200
   
   // Border
   border: [226, 232, 240], // slate-200
@@ -240,14 +240,14 @@ export async function generatePDFReport(data: ReportData) {
   let yPosition = 25
 
   // Background color for entire page
-  doc.setFillColor(COLORS.bgLight[0], COLORS.bgLight[1], COLORS.bgLight[2])
+  doc.setFillColor(255, 255, 255)
   doc.rect(0, 0, pageWidth, pageHeight, "F")
 
   // Helper to check page break
   const checkPageBreak = (space: number = 20) => {
     if (yPosition + space > pageHeight - 20) {
       doc.addPage()
-      doc.setFillColor(COLORS.bgLight[0], COLORS.bgLight[1], COLORS.bgLight[2])
+      doc.setFillColor(255, 255, 255)
       doc.rect(0, 0, pageWidth, pageHeight, "F")
       yPosition = 25
       return true
@@ -891,19 +891,33 @@ export async function generatePDFReport(data: ReportData) {
   drawSectionDivider(doc, yPosition)
   yPosition += 12
 
+  // ===== Build rows with running balance =====
+  let runningBalance = 0
+  let totalIncomeTxn = 0
+  let totalExpenseTxn = 0
+
   const transactionRows = transactions.map((t) => {
-    const categoryInfo = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES].find(
-      (cat) => cat.id === t.category
-    )
+    const isIncome = t.type === "income"
+    const income = isIncome ? t.amount : 0
+    const expense = !isIncome ? t.amount : 0
+
+    // Update totals
+    totalIncomeTxn += income
+    totalExpenseTxn += expense
+
+    // Update running balance
+    runningBalance += income - expense
+
     return {
       date: customDateFormat(t.date),
-      category: getCategoryName(t.category) || categoryInfo?.name || t.category,
-      type: t.type,
-      amount: t.amount,
+      category: getCategoryName(t.category),
+      income,
+      expense,
+      balance: runningBalance,
     }
   })
 
-  // === Function to draw table headers (reused every new page) ===
+  // === Draw table headers ===
   function drawTxnTableHeader(startY) {
     doc.setFillColor(COLORS.bgDark[0], COLORS.bgDark[1], COLORS.bgDark[2])
     doc.roundedRect(20, startY - 4, pageWidth - 40, 10, 2, 2, "F")
@@ -911,13 +925,15 @@ export async function generatePDFReport(data: ReportData) {
     doc.setFont("helvetica", "bold")
     doc.setFontSize(10)
     doc.setTextColor(COLORS.textPrimary[0], COLORS.textPrimary[1], COLORS.textPrimary[2])
+
     doc.text("Date", 25, startY + 2)
-    doc.text("Category", 65, startY + 2)
-    doc.text("Type", 115, startY + 2)
-    doc.text("Amount", 155, startY + 2, { align: "left" })
+    doc.text("Category", 55, startY + 2)
+    doc.text("Income", 95, startY + 2)
+    doc.text("Expense", 125, startY + 2)
+    doc.text("Balance", 160, startY + 2)
   }
 
-  // === Begin transactions card (first page) ===
+  // === Card container ===
   const txnTableHeight = pageHeight - 70
   drawCard(doc, 15, yPosition, pageWidth - 30, txnTableHeight, true)
 
@@ -925,16 +941,14 @@ export async function generatePDFReport(data: ReportData) {
   drawTxnTableHeader(txnY)
   txnY += 12
 
-  // === Table rows with auto page-break ===
   doc.setFont("helvetica", "normal")
   doc.setFontSize(9)
 
+  // === Table Rows ===
   transactionRows.forEach((row, idx) => {
-    // If no space left, create a new page
     if (txnY > pageHeight - 20) {
       doc.addPage()
 
-      // Draw new card on new page
       drawCard(doc, 15, 20, pageWidth - 30, pageHeight - 40, true)
 
       txnY = 30
@@ -942,42 +956,78 @@ export async function generatePDFReport(data: ReportData) {
       txnY += 12
     }
 
-    // Alternating row colors
+    // Alternating row shading
     if (idx % 2 === 1) {
       doc.setFillColor(COLORS.bgLight[0], COLORS.bgLight[1], COLORS.bgLight[2])
       doc.rect(20, txnY - 5, pageWidth - 40, 8, "F")
     }
 
     doc.setTextColor(COLORS.textSecondary[0], COLORS.textSecondary[1], COLORS.textSecondary[2])
+
     doc.text(row.date, 25, txnY)
 
     const catName = row.category.length > 20 ? row.category.substring(0, 20) + "..." : row.category
-    doc.text(catName, 65, txnY)
+    doc.text(catName, 55, txnY)
 
-    // Type
-    doc.setTextColor(COLORS.textSecondary[0], COLORS.textSecondary[1], COLORS.textSecondary[2])
-    doc.text(row.type === "income" ? "Income" : "Expense", 115, txnY)
+    // Income Column
+    doc.setFont("helvetica", row.income ? "bold" : "normal")
+    doc.setTextColor(COLORS.success[0], COLORS.success[1], COLORS.success[2])
+    doc.text(
+      row.income ? `${data.currency} ${row.income.toLocaleString()}` : "-",
+      95,
+      txnY
+    )
 
-    // Amount styling
-    const sign = row.type === "income" ? "+" : "-"
-    const formattedAmount = `${sign} ${data.currency} ${row.amount.toLocaleString("en-US", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    })}`
+    // Expense Column
+    doc.setFont("helvetica", row.expense ? "bold" : "normal")
+    doc.setTextColor(COLORS.danger[0], COLORS.danger[1], COLORS.danger[2])
+    doc.text(
+      row.expense ? `${data.currency} ${row.expense.toLocaleString()}` : "-",
+      125,
+      txnY
+    )
 
+    // Balance Column
     doc.setFont("helvetica", "bold")
-
-    if (row.type === "expense") {
-      doc.setTextColor(COLORS.danger[0], COLORS.danger[1], COLORS.danger[2])
-    } else {
-      doc.setTextColor(COLORS.success[0], COLORS.success[1], COLORS.success[2])
-    }
-
-    doc.text(formattedAmount, 155, txnY, { align: "left" })
+    doc.setTextColor(COLORS.textPrimary[0], COLORS.textPrimary[1], COLORS.textPrimary[2])
+    doc.text(
+      `${row.balance >= 0 ? '+ ' : '- '}${data.currency} ${Math.abs(row.balance).toLocaleString()}`,
+      160,
+      txnY,
+      { align: "left" }
+    )
 
     doc.setFont("helvetica", "normal")
 
     txnY += 8
+  })
+
+  // === SUMMARY ROW ===
+  if (txnY > pageHeight - 20) {
+    doc.addPage()
+    drawCard(doc, 15, 20, pageWidth - 30, pageHeight - 40, true)
+    txnY = 30
+    drawTxnTableHeader(txnY)
+    txnY += 12
+  }
+
+  doc.setFont("helvetica", "bold")
+  doc.setFontSize(10)
+
+  doc.setFillColor(COLORS.bgDark[0], COLORS.bgDark[1], COLORS.bgDark[2])
+  doc.rect(20, txnY - 5, pageWidth - 40, 10, "F")
+
+  doc.text("TOTAL", 55, txnY + 1)
+
+  doc.setTextColor(COLORS.success[0], COLORS.success[1], COLORS.success[2])
+  doc.text(`${data.currency} ${totalIncomeTxn.toLocaleString()}`, 95, txnY + 1)
+
+  doc.setTextColor(COLORS.danger[0], COLORS.danger[1], COLORS.danger[2])
+  doc.text(`${data.currency} ${totalExpenseTxn.toLocaleString()}`, 125, txnY + 1)
+
+  doc.setTextColor(COLORS.textPrimary[0], COLORS.textPrimary[1], COLORS.textPrimary[2])
+  doc.text(`${(totalIncomeTxn - totalExpenseTxn) >= 0 ? '+ ' : '- '}${data.currency} ${Math.abs(totalIncomeTxn - totalExpenseTxn).toLocaleString()}`, 160, txnY + 1, {
+    align: "left",
   })
 
   // ========== FOOTER ==========
