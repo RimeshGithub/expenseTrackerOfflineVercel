@@ -78,15 +78,22 @@ export const useFirebaseSync = (userId: string | null) => {
 
     try {
       const data = storage.getData()
-      const success = await firebaseSync.saveToFirebase(userId, data)
+      const empty = data.transactions.length === 0 && data.customCategories.length === 0
 
-      if (success) {
+      if (!empty) {
+        const success = await firebaseSync.saveToFirebase(userId, data)
+
+        if (!success) {
+          setSyncError("Failed to sync data")
+          return false
+        }
         setLastSyncTime(new Date().toISOString())
         return true
-      } else {
-        setSyncError("Failed to sync data")
+      } 
+      else { 
+        setSyncError("No data to sync")
         return false
-      }
+      } 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Sync failed"
       setSyncError(errorMessage)

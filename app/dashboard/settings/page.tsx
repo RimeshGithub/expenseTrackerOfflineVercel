@@ -587,6 +587,7 @@ export default function SettingsPage() {
                       <Switch
                         checked={autoSync}
                         onCheckedChange={(checked) => handlePreferenceUpdate("autoSync", checked)}
+                        className="data-[state=unchecked]:bg-gray-500"
                       />
                     </div>
 
