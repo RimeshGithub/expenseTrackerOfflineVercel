@@ -27,7 +27,13 @@ import { Filesystem, Directory, Encoding } from "@capacitor/filesystem"
 import { useEditFormStore } from "@/hooks/use-editform-store"
 
 export function TransactionsList() {
-  const { transactions, loading, deleteTransaction } = useTransactions()
+  const { transactions: trans, loading, deleteTransaction } = useTransactions()
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+
+  useEffect(() => {
+    setTransactions(trans)
+  }, [trans])
+
   const { toast } = useToast()
   const { expenseCategories, incomeCategories, getCustomCategories } = useCategories()
   const [customCategories, setCustomCategories] = useState<Category[]>([...getCustomCategories('expense'), ...getCustomCategories('income')])
@@ -324,7 +330,7 @@ export function TransactionsList() {
   }
 
   const getCategoryName = (catId: string) => {
-    const category = customCategories.find((c) => c.id === catId)
+    const category = [...expenseCategories, ...incomeCategories].find((c) => c.id === catId)
     return category ? category.name : catId
   }
 
@@ -675,7 +681,7 @@ export function TransactionsList() {
           {editingTransaction && (
             <EditTransactionForm
               transaction={editingTransaction}
-              onComplete={(transaction) => {setFilteredTransactions((prev) => prev.map((t) => t.id === transaction.id ? transaction : t)); setEditingTransaction(null)}}
+              onComplete={(transaction) => {setTransactions((prev) => prev.map((t) => t.id === transaction.id ? transaction : t)); setEditingTransaction(null)}}
               onCancel={() => setEditingTransaction(null)}
             />
           )}

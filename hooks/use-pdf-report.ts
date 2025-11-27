@@ -1,12 +1,11 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { useTransactions } from "./use-transactions"
 import { storage } from "@/lib/storage"
 import { generatePDFReport } from "@/lib/pdf-generator"
 import { useToast } from "@/hooks/use-toast"
 import NepaliDate from "nepali-date-converter"
-import { type Transaction } from "@/lib/types"
+import { type Transaction, type Category } from "@/lib/types"
 
 export function usePDFReport() {
   const [generating, setGenerating] = useState(false)
@@ -22,7 +21,7 @@ export function usePDFReport() {
   ]
 
   const generateReport = useCallback(
-    async (transactions: Transaction[], period: "monthly" | "annual", month?: number, year?: number, useBSDate?: boolean) => {
+    async (transactions: Transaction[], expenseCategories: Category[], incomeCategories: Category[], period: "monthly" | "annual", month?: number, year?: number, useBSDate?: boolean) => {
       const monthName = month ? useBSDate ? bsMonths[month] : adMonths[month] : ""
 
       try {
@@ -73,6 +72,8 @@ export function usePDFReport() {
           year: year || new Date().getFullYear(),
           calendar: useBSDate ? "BS" : "AD",
           currency: settings.currency,
+          incomeCategories,
+          expenseCategories
         })
 
         toast({

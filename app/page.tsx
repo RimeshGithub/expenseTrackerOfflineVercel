@@ -11,7 +11,7 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="py-10 px-4">
         <div className="max-w-6xl mx-auto text-center">
-          <div className="text-3xl md:text-6xl font-bold text-foreground mb-10 flex items-center justify-center gap-5 max-md:gap-2.5">
+          <div className="text-3xl md:text-6xl font-bold text-foreground mb-10 flex items-center justify-center gap-5 max-md:gap-2.5 max-md:mt-8">
             <TrendingUp className="h-15 w-15 max-md:h-10 max-md:w-10 text-primary" />
             <span className="font-bold">ExpenseTracker</span>
           </div>

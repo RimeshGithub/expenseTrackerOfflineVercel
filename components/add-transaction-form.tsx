@@ -211,7 +211,7 @@ export function AddTransactionForm() {
                   value={date}
                   required
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-75 shadow-sm rounded-md p-2.5 mr-2"
+                  className="w-75 shadow-sm rounded-md p-2.5 mr-2 bg-white"
                 />
               </label>
               
@@ -221,7 +221,7 @@ export function AddTransactionForm() {
                   <DatePicker               
                     key={`${bs.year}-${bs.month}-${bs.date}`} 
                     inputClassName="form-control"
-                    className="shadow-sm rounded-md px-2.5 py-1.5 w-75 cursor-default"
+                    className="shadow-sm rounded-md px-2.5 py-1.5 w-75 cursor-default bg-white"
                     defaultDate={`${bs.year}-${String(bs.month + 1).padStart(2, '0')}-${String(bs.date).padStart(2, '0')}`}
                     onChange={(newDate) => setDate(newDate.adDate)}
                     options={{ calenderLocale: 'ne', valueLocale: 'en' }}

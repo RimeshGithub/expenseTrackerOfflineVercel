@@ -10,10 +10,12 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import NepaliDate from "nepali-date-converter"
 import { type Transaction } from "@/lib/types"
+import { useCategories } from "@/hooks/use-categories"
 
 export function ReportGenerator({ transactions }: { transactions: Transaction[] }) {
   const [reportType, setReportType] = useState<"monthly" | "annual">("monthly")
   const { generateReport, generating } = usePDFReport()
+  const { incomeCategories, expenseCategories } = useCategories()
 
   // Get today's date
   const today = new Date()
@@ -58,9 +60,9 @@ export function ReportGenerator({ transactions }: { transactions: Transaction[] 
 
   const handleGenerateReport = () => {
     if (reportType === "monthly") {
-      generateReport(transactions, "monthly", parseInt(selectedMonth), parseInt(selectedYear), useBSDate)
+      generateReport(transactions, expenseCategories, incomeCategories, "monthly", parseInt(selectedMonth), parseInt(selectedYear), useBSDate)
     } else {
-      generateReport(transactions, "annual", undefined, parseInt(selectedYear), useBSDate)
+      generateReport(transactions, expenseCategories, incomeCategories, "annual", undefined, parseInt(selectedYear), useBSDate)
     }
   }
 

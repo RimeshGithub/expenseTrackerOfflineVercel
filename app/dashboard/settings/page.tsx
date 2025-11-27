@@ -242,7 +242,7 @@ export default function SettingsPage() {
   }
 
   const getCategoryName = (catId: string) => {
-    const category = customCategories.find((c) => c.id === catId)
+    const category = [...expenseCategories, ...incomeCategories].find((c) => c.id === catId)
     return category ? category.name : catId
   }
 

@@ -1,5 +1,5 @@
 import jsPDF from "jspdf"
-import { Transaction, EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "./types"
+import { Transaction, Category, EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "./types"
 import { storage } from "@/lib/storage"
 import NepaliDate from "nepali-date-converter"
 import { Capacitor } from "@capacitor/core"
@@ -12,6 +12,8 @@ interface ReportData {
   year: number
   calendar: "AD" | "BS"
   currency: string
+  incomeCategories: Category[]
+  expenseCategories: Category[]
 }
 
 // Modern color palette inspired by Notion/Stripe
@@ -146,17 +148,6 @@ function generateBarChartSVG(
   return svg;
 }
 
-const getCustomCategories = (type: "expense" | "income") => {
-  const data = storage.getData()
-  return data.customCategories.filter((c) => c.type === type)
-}
-
-const getCategoryName = (catId: string) => {
-  const customCategories = [...getCustomCategories("expense"), ...getCustomCategories("income")]
-  const category = customCategories.find((c) => c.id === catId)
-  return category ? category.name : catId
-}
-
 // Convert SVG to PNG using canvas
 function svgToBase64Image(svgString: string, scale: number = 8): Promise<string> {
   return new Promise((resolve) => {
@@ -242,6 +233,11 @@ export async function generatePDFReport(data: ReportData) {
   // Background color for entire page
   doc.setFillColor(255, 255, 255)
   doc.rect(0, 0, pageWidth, pageHeight, "F")
+
+  const getCategoryName = (catId: string) => {
+    const category = [...data.expenseCategories, ...data.incomeCategories].find((c) => c.id === catId)
+    return category ? category.name : catId
+  }
 
   // Helper to check page break
   const checkPageBreak = (space: number = 20) => {
@@ -821,7 +817,7 @@ export async function generatePDFReport(data: ReportData) {
     }
 
     // Table card
-    const tableHeight = 118
+    const tableHeight = 130
     drawCard(doc, 15, yPosition - 10, pageWidth - 30, tableHeight, true)
     
     let tableY = yPosition
@@ -874,6 +870,26 @@ export async function generatePDFReport(data: ReportData) {
 
       doc.setFont("helvetica", "normal")
       tableY += 8
+    })
+
+    doc.setFont("helvetica", "bold")
+    doc.setFontSize(10)
+
+    doc.setFillColor(COLORS.bgDark[0], COLORS.bgDark[1], COLORS.bgDark[2])
+    doc.rect(20, tableY - 5, pageWidth - 40, 10, "F")
+
+    doc.setTextColor(COLORS.textPrimary[0], COLORS.textPrimary[1], COLORS.textPrimary[2])
+    doc.text("TOTAL", 25, tableY + 1)
+
+    doc.setTextColor(COLORS.success[0], COLORS.success[1], COLORS.success[2])
+    doc.text(`${data.currency} ${totalIncome.toLocaleString()}`, pageWidth / 2 - 35, tableY + 1)
+
+    doc.setTextColor(COLORS.danger[0], COLORS.danger[1], COLORS.danger[2])
+    doc.text(`${data.currency} ${totalExpenses.toLocaleString()}`, pageWidth - 100, tableY + 1)
+
+    doc.setTextColor(COLORS.textPrimary[0], COLORS.textPrimary[1], COLORS.textPrimary[2])
+    doc.text(`${(totalIncome - totalExpenses) >= 0 ? '+ ' : '- '}${data.currency} ${Math.abs(totalIncome - totalExpenses).toLocaleString()}`, pageWidth - 60, tableY + 1, {
+      align: "left",
     })
 
     yPosition += pageHeight + 20
