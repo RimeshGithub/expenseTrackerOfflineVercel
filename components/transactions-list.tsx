@@ -31,7 +31,13 @@ export function TransactionsList() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
 
   useEffect(() => {
-    setTransactions(trans)
+    setTransactions((prev) => {
+      // Create a map of previous transactions by id
+      const prevMap = new Map(prev.map((t) => [t.id, t]))
+
+      // Map over the new `trans` array
+      return trans.map((t) => prevMap.get(t.id) || t)
+    })
   }, [trans])
 
   const { toast } = useToast()
@@ -86,8 +92,21 @@ export function TransactionsList() {
 
   // Filtering logic
   useEffect(() => {
-    let filtered = sortAsc ? transactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()) : transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    let filtered = [...transactions].sort((a, b) => {
+      const dateDiff = sortAsc
+        ? new Date(a.date).getTime() - new Date(b.date).getTime()
+        : new Date(b.date).getTime() - new Date(a.date).getTime()
 
+      // If dates are the same, sort by createdAt
+      if (dateDiff === 0) {
+        return sortAsc
+          ? new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      }
+
+      return dateDiff
+    })
+    
     // Date filtering based on selected calendar type
     if (filterYear !== "all") {
       filtered = filtered.filter((t) => {
