@@ -22,7 +22,7 @@ import NepaliDate from "nepali-date-converter"
 import { Category } from "@/lib/types"
 import { getCurrency } from "@/hooks/use-currency"
 
-export function AddTransactionForm() {
+export function AddTransactionForm({ scrollToTopFunc }: { scrollToTopFunc: () => void }) {
   const [type, setType] = useState<"expense" | "income">("expense")
   const [amount, setAmount] = useState("")
   const [categoryData, setCategoryData] = useState<Category | null>(null)
@@ -45,6 +45,7 @@ export function AddTransactionForm() {
     e.preventDefault()
     setError("")
     setSuccess("")
+    scrollToTopFunc()
 
     if (!amount || !categoryData || !date) {
       setError("Please fill in all fields")
@@ -83,6 +84,7 @@ export function AddTransactionForm() {
       setError(error.message || "Failed to add transaction")
     } finally {
       setLoading(false)
+      scrollToTopFunc()
     }
   }
 
